@@ -3,20 +3,20 @@ package main
 import (
 	"fmt"
 	"go-lession/account"
-	"go-lession/files"
 )
 
 func main() {
+	vault := account.NewVault()
 Menu:
 	for {
 		choose := inputMenu()
 		switch choose {
 		case 1:
-			createAccount()
+			createAccount(vault)
 		case 2:
-			searchAccount()
+			searchAccount(vault)
 		case 3:
-			deleteAccount()
+			deleteAccount(vault)
 		default:
 			break Menu
 		}
@@ -34,21 +34,34 @@ func inputMenu() int {
 	return input
 }
 
-func createAccount() {
+func createAccount(vault *account.Vault) {
 	acc := account.NewAccount()
-	file, err := acc.ToBytes()
+	vault.AddAccount(*acc)
+}
+
+func searchAccount(vault *account.Vault) {
+	var search string
+	fmt.Print("Введите URL: ")
+	fmt.Scan(&search)
+	data, err := vault.FindAccountsByUrl(search)
 	if err != nil {
-		fmt.Println("Не удалось преобразовать в JSON")
+		fmt.Println("Ничего не найдено")
 		return
 	}
-	files.WriteFile(file, "test.json")
-	files.ReadFile()
+	fmt.Println("\nВот что я нашёл:")
+	for _, value := range data {
+		value.Output()
+	}
 }
 
-func searchAccount() {
-
-}
-
-func deleteAccount() {
-
+func deleteAccount(vault *account.Vault) {
+	var url string
+	fmt.Print("Введите URL для удаления: ")
+	fmt.Scan(&url)
+	isDelete := vault.DeleteAccountByUrl(url)
+	if !isDelete {
+		fmt.Println("Ничего не нашлось")
+		return
+	}
+	fmt.Println("Запись успешно удалена")
 }
