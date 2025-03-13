@@ -1,9 +1,10 @@
 package files
 
 import (
-	"fmt"
 	"go-lession/output"
 	"os"
+
+	"github.com/fatih/color"
 )
 
 type JsonDb struct {
@@ -34,5 +35,5 @@ func (db *JsonDb) Write(content []byte) {
 		output.PrintError(err)
 		return
 	}
-	fmt.Println("File created successfully")
+	color.Green("File created successfully")
 }
