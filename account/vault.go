@@ -3,16 +3,25 @@ package account
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"go-lession/files"
+	"go-lession/output"
 	"slices"
 	"strings"
 	"time"
 )
 
+type Db interface {
+	Read() ([]byte, error)
+	Write([]byte)
+}
+
 type Vault struct {
 	Accounts  []Account `json:"accounts"`
 	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type VaultWithDb struct {
+	Vault
+	db Db
 }
 
 func (vault *Vault) ToBytes() ([]byte, error) {
@@ -23,12 +32,12 @@ func (vault *Vault) ToBytes() ([]byte, error) {
 	return file, nil
 }
 
-func (vault *Vault) AddAccount(acc Account) {
+func (vault *VaultWithDb) AddAccount(acc Account) {
 	vault.Accounts = append(vault.Accounts, acc)
 	vault.save()
 }
 
-func (vault *Vault) FindAccountsByUrl(url string) ([]Account, error) {
+func (vault *VaultWithDb) FindAccountsByUrl(url string) ([]Account, error) {
 	res := []Account{}
 	for _, value := range vault.Accounts {
 		if strings.Contains(value.Url, url) {
@@ -44,7 +53,7 @@ func (vault *Vault) FindAccountsByUrl(url string) ([]Account, error) {
 	return res, nil
 }
 
-func (vault *Vault) DeleteAccountByUrl(url string) bool {
+func (vault *VaultWithDb) DeleteAccountByUrl(url string) bool {
 	isDeleted := false
 	for index, account := range vault.Accounts {
 		if strings.Contains(account.Url, url) {
@@ -56,28 +65,34 @@ func (vault *Vault) DeleteAccountByUrl(url string) bool {
 	return isDeleted
 }
 
-func (vault *Vault) save() {
+func (vault *VaultWithDb) save() {
 	vault.UpdatedAt = time.Now()
 	data, err := vault.ToBytes()
 	if err != nil {
-		fmt.Println(err.Error())
+		output.PrintError(err)
 	}
-	files.WriteFile(data, "test.json")
+	vault.db.Write(data)
 }
 
-func NewVault() *Vault {
-	file, err := files.ReadFile("test.json")
+func NewVault(db Db) *VaultWithDb {
+	file, err := db.Read()
 	if err != nil {
-		return &Vault{
-			Accounts:  []Account{},
-			UpdatedAt: time.Now(),
+		return &VaultWithDb{
+			Vault: Vault{
+				Accounts:  []Account{},
+				UpdatedAt: time.Now(),
+			},
+			db: db,
 		}
 	}
 
 	var vault Vault
 	err = json.Unmarshal(file, &vault)
 	if err != nil {
-		fmt.Println(err.Error())
+		output.PrintError(err)
 	}
-	return &vault
+	return &VaultWithDb{
+		Vault: vault,
+		db:    db,
+	}
 }

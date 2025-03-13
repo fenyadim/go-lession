@@ -2,27 +2,36 @@ package files
 
 import (
 	"fmt"
+	"go-lession/output"
 	"os"
 )
 
-func ReadFile(name string) ([]byte, error) {
-	file, err := os.ReadFile(name)
+type JsonDb struct {
+	filename string
+}
+
+func NewJsonDb(filename string) *JsonDb {
+	return &JsonDb{filename: filename}
+}
+
+func (db *JsonDb) Read() ([]byte, error) {
+	file, err := os.ReadFile(db.filename)
 	if err != nil {
-		fmt.Println(err)
+		output.PrintError(err)
 		return nil, err
 	}
 	return file, nil
 }
 
-func WriteFile(content []byte, name string) {
-	file, err := os.Create(name)
+func (db *JsonDb) Write(content []byte) {
+	file, err := os.Create(db.filename)
 	if err != nil {
-		fmt.Println(err)
+		output.PrintError(err)
 	}
 	defer file.Close()
 	_, err = file.Write(content)
 	if err != nil {
-		fmt.Println(err)
+		output.PrintError(err)
 		return
 	}
 	fmt.Println("File created successfully")

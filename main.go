@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"go-lession/account"
+	"go-lession/files"
+	"go-lession/output"
 )
 
 func main() {
-	vault := account.NewVault()
+	vault := account.NewVault(files.NewJsonDb("test.json"))
 Menu:
 	for {
 		choose := inputMenu()
@@ -34,18 +36,18 @@ func inputMenu() int {
 	return input
 }
 
-func createAccount(vault *account.Vault) {
+func createAccount(vault *account.VaultWithDb) {
 	acc := account.NewAccount()
 	vault.AddAccount(*acc)
 }
 
-func searchAccount(vault *account.Vault) {
+func searchAccount(vault *account.VaultWithDb) {
 	var search string
 	fmt.Print("Введите URL: ")
 	fmt.Scan(&search)
 	data, err := vault.FindAccountsByUrl(search)
 	if err != nil {
-		fmt.Println("Ничего не найдено")
+		output.PrintError("Ничего не найдено")
 		return
 	}
 	fmt.Println("\nВот что я нашёл:")
@@ -54,13 +56,13 @@ func searchAccount(vault *account.Vault) {
 	}
 }
 
-func deleteAccount(vault *account.Vault) {
+func deleteAccount(vault *account.VaultWithDb) {
 	var url string
 	fmt.Print("Введите URL для удаления: ")
 	fmt.Scan(&url)
 	isDelete := vault.DeleteAccountByUrl(url)
 	if !isDelete {
-		fmt.Println("Ничего не нашлось")
+		output.PrintError("Ничего не нашлось")
 		return
 	}
 	fmt.Println("Запись успешно удалена")
