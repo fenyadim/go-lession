@@ -3,10 +3,13 @@ package account
 import (
 	"encoding/json"
 	"errors"
+	"go-lession/encrypter"
 	"go-lession/output"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
 type Db interface {
@@ -21,7 +24,8 @@ type Vault struct {
 
 type VaultWithDb struct {
 	Vault
-	db Db
+	db  Db
+	enc encrypter.Encrypter
 }
 
 func (vault *Vault) ToBytes() ([]byte, error) {
@@ -68,13 +72,14 @@ func (vault *VaultWithDb) DeleteAccountByUrl(url string) bool {
 func (vault *VaultWithDb) save() {
 	vault.UpdatedAt = time.Now()
 	data, err := vault.ToBytes()
+	encData := vault.enc.Encrypt(data)
 	if err != nil {
 		output.PrintError(err)
 	}
-	vault.db.Write(data)
+	vault.db.Write(encData)
 }
 
-func NewVault(db Db) *VaultWithDb {
+func NewVault(db Db, enc encrypter.Encrypter) *VaultWithDb {
 	file, err := db.Read()
 	if err != nil {
 		return &VaultWithDb{
@@ -82,17 +87,22 @@ func NewVault(db Db) *VaultWithDb {
 				Accounts:  []Account{},
 				UpdatedAt: time.Now(),
 			},
-			db: db,
+			db:  db,
+			enc: enc,
 		}
 	}
 
+	data := enc.Decrypt(file)
+
 	var vault Vault
-	err = json.Unmarshal(file, &vault)
+	err = json.Unmarshal(data, &vault)
+	color.Cyan("Найдено %d аккаунтов", len(vault.Accounts))
 	if err != nil {
 		output.PrintError(err)
 	}
 	return &VaultWithDb{
 		Vault: vault,
 		db:    db,
+		enc:   enc,
 	}
 }

@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"go-lession/account"
+	"go-lession/encrypter"
 	"go-lession/files"
 	"go-lession/output"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 var menu = map[string]func(*account.VaultWithDb){
@@ -16,7 +19,11 @@ var menu = map[string]func(*account.VaultWithDb){
 }
 
 func main() {
-	vault := account.NewVault(files.NewJsonDb("test.json"))
+	err := godotenv.Load()
+	vault := account.NewVault(files.NewJsonDb("test.vault"), *encrypter.NewEncrypter())
+	if err != nil {
+		output.PrintError(err)
+	}
 Menu:
 	for {
 		choose := promptData(
